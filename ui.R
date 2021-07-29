@@ -26,34 +26,51 @@ sidebar <- dashboardSidebar(
 body <- dashboardBody(
   tabItems(
     tabItem("about", h2("About")
-            ),
+    ),
     tabItem("data", h2("Data"),
             fluidRow(
               box(
                 width = 2,
-                checkboxGroupInput("tableVariables", "Variables to include in table",
-                                 choices = names(heartData),
-                                 inline = FALSE,
-                                 selected = names(heartData)
-                                 )
+                uiOutput("varChoiceTable")
                 ),
               box(
                 width = 10,
-                DTOutput("fullTable")#,
-                # style = "overflow-x: scroll"
+                DTOutput("fullTable")
                 )
               ),
             fluidRow(
               downloadButton("dlTable", "Download data set with selected variables"))
-            ),
-    tabItem("dataExploration", h2("Data Exploration")
-            ),
-    tabItem("info", h2("Modeling Info")
-            ),
-    tabItem("fitting", h2("Model Fitting")
-            ),
-    tabItem("prediction", h2("Prediction")
+    ),
+    tabItem("dataExploration", h2("Data Exploration"),
+            fluidRow(
+              column(width = 4,
+                box(
+                  width = NULL,
+                  uiOutput("plotVariable1choices"),
+                  uiOutput("plotVariable2choices")
+                ),
+                box(
+                  width = NULL,
+                  uiOutput("singleVarChart"),
+                  uiOutput("chart2vars"),
+                  uiOutput("corr")
+                )
+              ),
+              column(width = 8,
+                box(
+                  width = NULL,
+                  uiOutput("plotSingleVar"),
+                  uiOutput("plotSingleVar2")
+                )
+              )
             )
+    ),
+    tabItem("info", h2("Modeling Info")
+    ),
+    tabItem("fitting", h2("Model Fitting")
+    ),
+    tabItem("prediction", h2("Prediction")
+    )
   )
 )
 
