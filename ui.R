@@ -19,7 +19,7 @@ sidebar <- dashboardSidebar(
              menuSubItem("Modeling Info", tabName = "info"),
              menuSubItem("Model Fitting", tabName = "fitting"),
              menuSubItem("Prediction", tabName = "prediction")
-             )
+    )
   )
 )
 
@@ -68,7 +68,45 @@ body <- dashboardBody(
     ),
     tabItem("info", h2("Modeling Info")
     ),
-    tabItem("fitting", h2("Model Fitting")
+    tabItem("fitting", h2("Model Fitting"),
+            fluidRow(
+              box(width = 5,
+                sliderInput("trainingProp", "What proportion of data to use as training set?",
+                          min = 0.1, max = 0.9, value = 0.7)
+              ),
+              box(width = 2,
+                actionButton("fit", "Fit Models")
+              ),
+              box(width = 5,
+                tableOutput("comparison")
+              )
+            ),
+            fluidRow(
+              box(
+                uiOutput("varChoiceModel1"),
+                uiOutput("intChoiceModel1"),
+                uiOutput("autoChoiceModel1")
+              ),
+              box(
+                verbatimTextOutput("model1Text")
+              )
+            ),
+            fluidRow(
+              box(
+                uiOutput("varChoiceModel2")
+              ),
+              box(
+                verbatimTextOutput("model2Text")
+              )
+            ),
+            fluidRow(
+              box(
+                uiOutput("varChoiceModel3")
+              ),
+              box(
+                verbatimTextOutput("model3Text")
+              )
+            )
     ),
     tabItem("prediction", h2("Prediction")
     )

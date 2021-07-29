@@ -16,6 +16,7 @@ library(plotly)
 library(ggmosaic)
 library(knitr)
 library(xtable)
+library(caret)
 
 
 select <- dplyr::select
@@ -36,71 +37,7 @@ heartData <- heartData %>%
   select(disease, everything()) %>%
   na.omit()
 
-# data.frame(summary(heartData2 %>% select(age)))
-# xtable::xtable(summary(heartData2 %>% select(age)))
-# class(data.frame(count(heartData2, disease)))
-# ?stripchart
-# stripchart(heartData[,2], method = "jitter")
-# heartData %>%  ggplot() + geom_histogram(aes(x = disease, fill = disease, alpha = 0.5))
 
-# fig3d <- plot_ly(x = heartData$trestbps, y = heartData$age, z = heartData$num)
-# fig3d
-# 
-# figBox <- plot_ly(heartData, y = ~trestbps, color = ~disease, type = "box")
-# figBox
-# 
-# x1 <- heartData2 %>% filter(cp == "1") %>%
-#   select(age)
-# x2 <- heartData2 %>% filter(cp == "2") %>%
-#   select(age)
-# 
-# lev <- levels(heartData2$cp)
-# figHist <- plot_ly(alpha = 0.6)
-# for(i in lev){
-#   figHist <- figHist %>% add_histogram(x = (heartData2 %>% filter(cp == i) %>%
-#     select(age))[[1]])
-# }
-# figHist <- figHist %>% layout(barmode = "dodge")
-# figHist
-# 
-# add_histogram(x = x1[[1]]) %>%
-#   add_histogram(x = x2[[1]]) %>%
-#   layout(barmode = "overlay")
-# figHist
-# summary(x1)
-# 
-# figBar <- heartData %>% count(cp, disease) %>%
-#   plot_ly(x = ~cp, y = ~n, color = ~disease) %>%
-#   add_bars()
-# figBar
-
-
-# figBar <- heartData %>% count(!!sym("cp")) %>%
-#   plot_ly(x = ~aes_string("cp"), y = ~n, type = "bar") %>%
-#   layout(barmode = "stack")
-# figBar
-
-
-# 
-# tab <- xtabs(~ cp + disease, data = heartData)
-# tab
-# dotchart(tab)
-# mosaicplot(tab, shade = TRUE)
-# 
-# 
-
-# 
-# heartData %>% select(where(is.factor)) %>% names
-# heartData %>% select(where(is.numeric)) %>% names
-# 
-# checkboxGroupInput()
-
-# ggplot(heartData, aes(x = slope, fill = num)) + geom_bar()
-# # 
-# # ggpairs(heartData)
-# # 
-# # str(heartData)
-# # 
 # binMod <- glm(num ~ . - disease, family = binomial, heartData)
 # summary(binMod)
 # df <- data.frame(binMod$fitted.values, heartData$num)
@@ -196,27 +133,7 @@ function(input, output, session) {
                 selected = "none"
     )
   })
-  # output$barSingle <- renderPlotly({
-  #   figBar <- heartData %>% count(!!sym(input$plotVariable1)) %>%
-  #     plot_ly(x = ~aes_string(input$plotVariable1), y = ~n) %>%
-  #     add_bars()
-  #   figBar
-  # })
-  # output$test <- renderText({
-  #   paste0("plotVariable1", input$plotVariable1, input$plotVariable2, heartData %>% count(!!sym(input$plotVariable1)), heartData %>% select(input$plotVariable1) %>% mean)
-  # })
-  
-  
-  # output$singleVar <- renderUI({
-  #   if(input$plotVariable2 == "none"){
-  #     selectInput("singleVarChoice", "Which type of plot?",
-  #                 choices = c("Histogram", "Boxplot"),
-  #                 selected = "Histogram"
-  #     )
-  #     }
-  # })
 
-  
   output$plotSingleVar <- renderUI({
     if(input$plotVariable2 == 'none'){
       if(is.factor((heartData %>% select(input$plotVariable1))[[1]])){
@@ -303,6 +220,38 @@ function(input, output, session) {
         }
       }
     }
+  })
+  
+  output$varChoiceModel1 <- renderUI({
+    checkboxGroupInput("modelVariables1", "Variables to include in GLM",
+                       choices = names(heartData %>% select(-c(disease, num))),
+                       inline = FALSE,
+                       selected = names(heartData %>% select(-c(disease, num)))
+    )
+  })
+  output$intChoiceModel1 <- renderUI({
+    checkboxInput("interaction", "Include interaction terms?"
+    )
+  })
+  output$autoChoiceModel1 <- renderUI({
+    checkboxInput("selection", "Perform automatic variable selection based on AIC (among variables selected above)?"
+    )
+  })
+  
+  output$varChoiceModel2 <- renderUI({
+    checkboxGroupInput("modelVariables2", "Variables to include in Classification Tree Model",
+                       choices = names(heartData %>% select(-c(disease, num))),
+                       inline = FALSE,
+                       selected = names(heartData %>% select(-c(disease, num)))
+    )
+  })
+  
+  output$varChoiceModel3 <- renderUI({
+    checkboxGroupInput("modelVariables3", "Variables to include in Random Forest Model",
+                       choices = names(heartData %>% select(-c(disease, num))),
+                       inline = FALSE,
+                       selected = names(heartData %>% select(-c(disease, num)))
+    )
   })
 
   
@@ -392,21 +341,90 @@ function(input, output, session) {
       plot_ly(x = as.formula(paste0("~", input$plotVariable1)), type = "histogram")
     figHist
   })
+  
+  data <- eventReactive(input$fit, {
+    list(prop = input$trainingProp, vars1 = input$modelVariables1, vars2 = input$modelVariables2, vars3 = input$modelVariables3, int = input$interaction, auto = input$selection)
+  })
+  
+  fitModels <- reactive({
+    #Create a progress object and make sure it closes when we exit the reactive
+    progress <- shiny::Progress$new()
+    on.exit(progress$close())
+    progress$set(message = "Fitting model", value = 0)
+    info <- data()
+    trainIndex <- createDataPartition(heartData$disease, p = info$prop[[1]], list = FALSE)
+    heartTrain <- heartData[trainIndex, ]
+    heartTest <- heartData[-trainIndex, ]
+    predictors1 <- paste(info$vars1, collapse = "+")
+    formula1 <- as.formula(paste0("disease", "~", predictors1))
+    progress$inc(1/4, detail = paste("GLM"))
+    model1Fit <- train(formula1, data = heartTrain,
+                      method = "glm",
+                      family = "binomial",
+                      preProcess = c("center", "scale"),
+                      trControl = trainControl(method = "cv", number = 10)
+    )
+    predictors2 <- paste(info$vars2, collapse = "+")
+    formula2 <- as.formula(paste0("disease", "~", predictors2))
+    progress$inc(2/4, detail = paste("Tree"))
+    model2Fit <- train(formula2, data = heartTrain,
+                       method = "rpart",
+                       preProcess = c("center", "scale"),
+                       trControl = trainControl(method = "repeatedcv", number = 10, repeats = 3)
+    )
+    predictors3 <- paste(info$vars3, collapse = "+")
+    formula3 <- as.formula(paste0("disease", "~", predictors3))
+    progress$inc(3/4, detail = paste("Random Forest"))
+    model3Fit <- train(formula3, data = heartTrain,
+                       method = "rf",
+                       preProcess = c("center", "scale"),
+                       trControl = trainControl(method = "repeatedcv", number = 10, repeats = 3)
+    )
+    progress$inc(4/4, detail = paste("Done"))
+    list(model1Fit, model2Fit, model3Fit)
+  })
+  
+  
+  
+  output$model1Text <- renderPrint({
+    model1Fit <- fitModels()[[1]]
+    model1Fit
+  })
+  
+  output$model2Text <- renderPrint({
+    model2Fit <- fitModels()[[2]]
+    model2Fit
+  })
+  
+  output$model3Text <- renderPrint({
+    model3Fit <- fitModels()[[3]]
+    model3Fit
+  })
+  
+  output$comparison <- renderTable({
+    model1Fit <- fitModels()[[1]]
+    model2Fit <- fitModels()[[2]]
+    model3Fit <- fitModels()[[3]]
+    results <- c("GLM" = model1Fit[["results"]][["Accuracy"]],
+                 "Tree" = model2Fit[["results"]]["Accuracy"][which.max(model2Fit[["results"]][["Accuracy"]]), ],
+                 "Random Forest" = model3Fit[["results"]]["Accuracy"][which.max(model3Fit[["results"]][["Accuracy"]]), ])
+    data.frame("Accuracy" = results)
+  },
+  rownames = TRUE)
+  
 }
 
-  
-  
-#     output$distPlot <- renderPlot({
-# 
-#         # generate bins based on input$bins from ui.R
-#         x    <- faithful[, 2]
-#         bins <- seq(min(x), max(x), length.out = input$bins + 1)
-# 
-#         # draw the histogram with the specified number of bins
-#         hist(x, breaks = bins, col = 'darkgray', border = 'white')
-# 
-#     })
-# 
+# paste("Tree model accuracy = ", fitModels[[2]][["results"]]["Accuracy"])
+
+# listTest <- list(logFit10, logFit4)
+# str(listTest[[2]])
+# str(logFit4)
+
+# logFit10[["results"]]["Accuracy"][[1]]
+# str(logFit10$results)
+# lapply(list(logFit10, logFit4), [["results"]])
+  # test <- paste(c("hi", "bye"), collapse = "+")
+  # as.formula(paste0("y", "~", test))
 
 # 
 # options(contrasts = c("contr.treatment", "contr.poly"))
