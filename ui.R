@@ -60,7 +60,8 @@ body <- dashboardBody(
                 box(
                   width = NULL,
                   uiOutput("plotSingleVar"),
-                  uiOutput("plotSingleVar2")
+                  uiOutput("plotSingleVar2"),
+                  uiOutput("plot2vars")
                 )
               )
             )

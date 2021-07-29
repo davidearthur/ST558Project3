@@ -49,16 +49,23 @@ heartData <- heartData %>%
 # figBox <- plot_ly(heartData, y = ~trestbps, color = ~disease, type = "box")
 # figBox
 # 
-# x1 <- heartData %>% filter(disease == "Yes") %>%
+# x1 <- heartData2 %>% filter(cp == "1") %>%
 #   select(age)
-# x2 <- heartData %>% filter(disease == "No") %>%
+# x2 <- heartData2 %>% filter(cp == "2") %>%
 #   select(age)
 # 
+# lev <- levels(heartData2$cp)
+# figHist <- plot_ly(alpha = 0.6)
+# for(i in lev){
+#   figHist <- figHist %>% add_histogram(x = (heartData2 %>% filter(cp == i) %>%
+#     select(age))[[1]])
+# }
+# figHist <- figHist %>% layout(barmode = "dodge")
+# figHist
 # 
-# figHist <- plot_ly(alpha = 0.6) %>%
-#   add_histogram(x = x1[[1]]) %>%
+# add_histogram(x = x1[[1]]) %>%
 #   add_histogram(x = x2[[1]]) %>%
-#   layout(barmode = "dodge")
+#   layout(barmode = "overlay")
 # figHist
 # summary(x1)
 # 
@@ -81,9 +88,7 @@ heartData <- heartData %>%
 # mosaicplot(tab, shade = TRUE)
 # 
 # 
-# p <- ggplot(data = count(heartData, cp, disease)) +
-#   geom_mosaic(aes(weight = n, x = product(cp), fill = disease))
-# ggplotly(p)
+
 # 
 # heartData %>% select(where(is.factor)) %>% names
 # heartData %>% select(where(is.numeric)) %>% names
@@ -276,6 +281,31 @@ function(input, output, session) {
     }
   })
   
+  output$plot2vars <- renderUI({
+    if(input$plotVariable2 != "none"){
+      if(is.factor((heartData %>% select(input$plotVariable1))[[1]])){
+        if(is.factor((heartData %>% select(input$plotVariable2))[[1]])){
+          plotlyOutput("factorFactorPlot")
+        } else {
+          if(is.numeric((heartData %>% select(input$plotVariable2))[[1]])){
+            plotlyOutput("factorContPlot")
+          }
+        }
+      } else {
+        if(is.numeric((heartData %>% select(input$plotVariable1))[[1]])){
+          if(is.factor((heartData %>% select(input$plotVariable2))[[1]])){
+            plotlyOutput("contFactorPlot")
+          } else {
+            if(is.numeric((heartData %>% select(input$plotVariable2))[[1]])){
+              plotlyOutput("contContPlot")
+            }
+          }
+        }
+      }
+    }
+  })
+
+  
   output$factorFactorSummary <- renderTable({
     # xtable(xtabs(as.formula(paste0("~", input$plotVariable1, "+", input$plotVariable2)), data = heartData))
     xtable(table((heartData %>% select(input$plotVariable1))[[1]], (heartData %>% select(input$plotVariable2))[[1]]))
@@ -302,7 +332,40 @@ function(input, output, session) {
   output$corrText <- renderText({
     paste0("Correlation between ", input$plotVariable1, " and ", input$plotVariable2, " = ", round(cor(heartData %>% select(!!sym(input$plotVariable1)), heartData %>% select(!!sym(input$plotVariable2))), 3))
   })
-
+  
+  output$factorFactorPlot <- renderPlotly({
+    p <- ggplot(data = count(heartData, !!sym(input$plotVariable2), !!sym(input$plotVariable1))) + geom_mosaic(aes(weight = n, x = product(!!sym(input$plotVariable2)), fill = !!sym(input$plotVariable1))) + labs(x = input$plotVariable2, y = input$plotVariable1)
+    ggplotly(p)
+  })
+  output$factorContPlot <- renderPlotly({
+    lev <- levels((heartData %>% select(input$plotVariable1))[[1]])
+    figHist <- plot_ly(alpha = 0.6)
+    for(i in lev){
+      figHist <- figHist %>% add_histogram(x = (heartData %>% filter(!!sym(input$plotVariable1) == i) %>% select(input$plotVariable2))[[1]], name = i)
+    }
+    figHist <- figHist %>% layout(barmode = "overlay",
+                                  xaxis = list(title = input$plotVariable2),
+                                  legend = list(title = list(text = input$plotVariable1)))
+    figHist
+  })
+  output$contFactorPlot <- renderPlotly({
+    lev <- levels((heartData %>% select(input$plotVariable2))[[1]])
+    figHist <- plot_ly(alpha = 0.6)
+    for(i in lev){
+      figHist <- figHist %>% add_histogram(x = (heartData %>% filter(!!sym(input$plotVariable2) == i) %>% select(input$plotVariable1))[[1]], name = i)
+    }
+    figHist <- figHist %>% layout(barmode = "overlay",
+                                  xaxis = list(title = input$plotVariable1),
+                                  legend = list(title = list(text = input$plotVariable2)))
+    figHist
+  })
+  output$contContPlot <- renderPlotly({
+    figScatter <- heartData %>% plot_ly(x = as.formula(paste0("~", input$plotVariable1)),
+                  y = as.formula(paste0("~", input$plotVariable2)),
+                 type = "scatter",
+                 mode = "markers")
+    figScatter
+  })
   
   
   output$singleVarSummary <- renderTable({
