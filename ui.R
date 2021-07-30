@@ -77,38 +77,69 @@ body <- dashboardBody(
               box(width = 2,
                 actionButton("fit", "Fit Models")
               ),
-              box(width = 5,
-                tableOutput("comparison")
+              box(title = "Comparison of performance on training set",
+                  width = 5,
+                  tableOutput("comparison")
               )
             ),
             fluidRow(
-              box(
+              box(width = 4,
                 uiOutput("varChoiceModel1"),
                 uiOutput("intChoiceModel1"),
                 uiOutput("autoChoiceModel1")
               ),
-              box(
-                verbatimTextOutput("model1Text")
+              box(title = "GLM fit on training set",
+                  width = 8,
+                  verbatimTextOutput("model1Text")
               )
             ),
             fluidRow(
-              box(
+              box(width = 4,
                 uiOutput("varChoiceModel2")
               ),
-              box(
-                verbatimTextOutput("model2Text")
+              box(title = "Classification Tree fit on training set",
+                  width = 8,
+                  verbatimTextOutput("model2Text")
               )
             ),
             fluidRow(
-              box(
+              box(width = 4,
                 uiOutput("varChoiceModel3")
               ),
-              box(
-                verbatimTextOutput("model3Text")
+              box(title = "Random Forest fit on training set",
+                  width = 8,
+                  verbatimTextOutput("model3Text")
+              )
+            ),
+            fluidRow(
+              box(title = "GLM performance on test set",
+                verbatimTextOutput("performance1")
+              ),
+              box(title = "Classification Tree performance on test set",
+                verbatimTextOutput("performance2")
+              )
+            ),
+            fluidRow(
+              box(title = "Random Forest performance on test set",
+                verbatimTextOutput("performance3")
+              ),
+              box(title = "Comparison of mis-classification rates on test set",
+                tableOutput("performanceComp")
               )
             )
     ),
-    tabItem("prediction", h2("Prediction")
+    tabItem("prediction", h2("Prediction"),
+            fluidRow(
+              box(title = "Categorical variables",
+                uiOutput("factorsInput")
+              ),
+              box(title = "Continuous variables",
+                uiOutput("contInput")
+              ),
+              box("Predictions based on selected values of variables",
+                tableOutput("predictions")
+              )
+            )
     )
   )
 )

@@ -34,6 +34,7 @@ heartData <- heartData %>%
   mutate(across(c(ca, num), ordered)) %>%
   mutate(disease = factor(num != 0)) %>%
   mutate(disease = fct_recode(disease, Yes = "TRUE", No = "FALSE")) %>%
+  mutate(sex = fct_recode(sex, Male = "1", Female = "0")) %>%
   select(disease, everything()) %>%
   na.omit()
 
@@ -253,6 +254,28 @@ function(input, output, session) {
                        selected = names(heartData %>% select(-c(disease, num)))
     )
   })
+  
+  output$factorsInput <- renderUI({
+    tagList(
+        selectInput("sex", "sex", choices = c(levels(heartData$sex))),
+        selectInput("cp", "cp", choices = c(levels(heartData$cp))),
+        selectInput("fbs", "fbs", choices = c(levels(heartData$fbs))),
+        selectInput("restecg", "restecg", choices = c(levels(heartData$restecg))),
+        selectInput("exang", "exang", choices = c(levels(heartData$exang))),
+        selectInput("slope", "slope", choices = c(levels(heartData$slope))),
+        selectInput("ca", "ca", choices = c(levels(heartData$ca))),
+        selectInput("thal", "thal", choices = c(levels(heartData$thal)))
+    )
+  })
+  output$contInput <- renderUI({
+    tagList(
+        numericInput("age", "age", value = mean(heartData$age, min = 0, max = 150)),
+        numericInput("trestbps", "trestbps", value = mean(heartData$trestbps), min = 0, max = 2 * max(heartData$trestbps)),
+        numericInput("chol", "chol", value = mean(heartData$chol), min = 0, max = 2 * max(heartData$chol)),
+        numericInput("thalach", "thalach", value = mean(heartData$thalach), min = 0, max = 2 * max(heartData$thalach)),
+        numericInput("oldpeak", "oldpeak", value = mean(heartData$oldpeak), min = 0, max = 2 * max(heartData$oldpeak))
+    )
+  })
 
   
   output$factorFactorSummary <- renderTable({
@@ -381,7 +404,7 @@ function(input, output, session) {
                        trControl = trainControl(method = "repeatedcv", number = 10, repeats = 3)
     )
     progress$inc(4/4, detail = paste("Done"))
-    list(model1Fit, model2Fit, model3Fit)
+    list(model1Fit, model2Fit, model3Fit, heartTest)
   })
   
   
@@ -407,11 +430,59 @@ function(input, output, session) {
     model3Fit <- fitModels()[[3]]
     results <- c("GLM" = model1Fit[["results"]][["Accuracy"]],
                  "Tree" = model2Fit[["results"]]["Accuracy"][which.max(model2Fit[["results"]][["Accuracy"]]), ],
-                 "Random Forest" = model3Fit[["results"]]["Accuracy"][which.max(model3Fit[["results"]][["Accuracy"]]), ])
+                 "Random Forest" = model3Fit[["results"]]["Accuracy"][which.max(model3Fit[["results"]][["Accuracy"]]), ]
+    )
     data.frame("Accuracy" = results)
   },
-  rownames = TRUE)
+  rownames = TRUE
+  )
   
+  performance <- reactive({
+    model1Fit <- fitModels()[[1]]
+    model2Fit <- fitModels()[[2]]
+    model3Fit <- fitModels()[[3]]
+    heartTest <- fitModels()[[4]]
+    pred1 <- predict(model1Fit, heartTest)
+    conf1 <- confusionMatrix(pred1, heartTest$disease)
+    pred2 <- predict(model2Fit, heartTest)
+    conf2 <- confusionMatrix(pred2, heartTest$disease)
+    pred3 <- predict(model3Fit, heartTest)
+    conf3 <- confusionMatrix(pred3, heartTest$disease)
+    list(conf1, conf2, conf3)
+  })
+  
+  output$performance1 <- renderPrint({
+    performance()[[1]]
+  })
+  output$performance2 <- renderPrint({
+    performance()[[2]]
+  })
+  output$performance3 <- renderPrint({
+    performance()[[3]]
+  })
+  output$performanceComp <- renderTable({
+    results <- c("GLM" = 1 - performance()[[1]][["overall"]][["Accuracy"]],
+                 "Tree" = 1 - performance()[[2]][["overall"]][["Accuracy"]],
+                 "Random Forest" = 1 - performance()[[3]][["overall"]][["Accuracy"]]
+    )
+    data.frame("Mis-classification rate" = results)
+  },
+  rownames = TRUE
+  )
+  
+  output$predictions <- renderTable({
+    model1Fit <- fitModels()[[1]]
+    model2Fit <- fitModels()[[2]]
+    model3Fit <- fitModels()[[3]]
+    newdf <- data.frame(age = input$age, sex = input$sex, cp = input$cp, trestbps = input$trestbps, chol = input$chol, fbs = input$fbs, restecg = input$restecg, thalach = input$thalach, exang = input$exang, oldpeak = input$oldpeak, slope = input$slope, ca = input$ca, thal = input$thal)
+    results <- c("GLM" = predict(model1Fit, newdf),
+                 "Tree" = predict(model2Fit, newdf),
+                 "Random Forest" = predict(model3Fit, newdf))
+    data.frame("Prediction" = results)
+  },
+  rownames = TRUE
+  )
+
 }
 
 # paste("Tree model accuracy = ", fitModels[[2]][["results"]]["Accuracy"])
