@@ -300,11 +300,11 @@ function(input, output, session) {
   # get values of continuous variables for prediction
   output$contInput <- renderUI({
     tagList(
-        numericInput("age", "age", value = mean(heartData$age, min = 0, max = 150)),
-        numericInput("trestbps", "trestbps", value = mean(heartData$trestbps), min = 0, max = 2 * max(heartData$trestbps)),
-        numericInput("chol", "chol", value = mean(heartData$chol), min = 0, max = 2 * max(heartData$chol)),
-        numericInput("thalach", "thalach", value = mean(heartData$thalach), min = 0, max = 2 * max(heartData$thalach)),
-        numericInput("oldpeak", "oldpeak", value = mean(heartData$oldpeak), min = 0, max = 2 * max(heartData$oldpeak))
+        numericInput("age", "age", value = round(mean(heartData$age), 1), min = 0, max = 150),
+        numericInput("trestbps", "trestbps", value = round(mean(heartData$trestbps), 1), min = 0, max = 2 * max(heartData$trestbps)),
+        numericInput("chol", "chol", value = round(mean(heartData$chol), 1), min = 0, max = 2 * max(heartData$chol)),
+        numericInput("thalach", "thalach", value = round(mean(heartData$thalach), 1), min = 0, max = 2 * max(heartData$thalach)),
+        numericInput("oldpeak", "oldpeak", value = round(mean(heartData$oldpeak), 1), min = 0, max = 2 * max(heartData$oldpeak))
     )
   })
   # create summary tables

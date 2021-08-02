@@ -211,7 +211,7 @@ body <- dashboardBody(
               box(title = "Categorical variables",
                 uiOutput("factorsInput")
               ),
-              box(title = "Continuous variables",
+              box(title = "Continuous variables (initially set to mean",
                 uiOutput("contInput")
               ),
               box("Predictions of fitted models based on selected values of variables",
