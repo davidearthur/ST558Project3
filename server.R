@@ -19,7 +19,7 @@ library(xtable)
 library(caret)
 
 select <- dplyr::select
-
+# read in data
 heartData <- read_csv("processed.cleveland.data",
                       col_names = c("age", "sex", "cp", "trestbps", "chol", "fbs",
                                     "restecg", "thalach", "exang", "oldpeak",
@@ -37,63 +37,11 @@ heartData <- heartData %>%
   select(disease, everything()) %>%
   na.omit()
 
-
-# binMod <- glm(num ~ . - disease, family = binomial, heartData)
-# summary(binMod)
-# df <- data.frame(binMod$fitted.values, heartData$num)
-# tabBin <- xtabs(~ (binMod$fitted.values > .4) + (heartData$num != 0))
-# tabBin
-# (tabBin[1,1] + tabBin[2,2])/sum(tabBin)
-# library(ROCR)
-# predBin <- prediction(binMod$fitted.values, (heartData$num != 0))
-# perfBin <- performance(predBin, "acc")
-# plot(perfBin)
-# optimize(perfBin, interval = c(.2, .8), maximum = TRUE)
-# max(perfBin)
-# perfBin
-# slotNames(perfBin)
-# perfBin @ x.name
-# 
-# aucBin <- performance(predBin, "auc")
-# aucBin @ y.values[[1]]
-# perfBin @ y.values[[1]]
-
-
-# binMod2 <- glm(disease ~ . - num, family = binomial, heartData)
-# summary(binMod2)
-# df <- data.frame(binMod2$fitted.values, heartData$num)
-# tabBin <- xtabs(~ (binMod2$fitted.values > .4) + (heartData$num != 0))
-# tabBin
-# (tabBin[1,1] + tabBin[2,2])/sum(tabBin)
-# library(ROCR)
-# predBin <- prediction(binMod2$fitted.values, (heartData$num != 0))
-# perfBin <- performance(predBin, "acc")
-# plot(perfBin)
-# optimize(perfBin, interval = c(.2, .8), maximum = TRUE)
-# max(perfBin)
-# perfBin
-# slotNames(perfBin)
-# perfBin @ x.name
-# 
-# aucBin <- performance(predBin, "auc")
-# aucBin @ y.values[[1]]
-# perfBin @ y.values[[1]]
-# 
-# orderedLogMod <- polr(num ~ ., heartData)
-# orderedLogMod
-# 
-# pred <- predict(orderedLogMod, heartData, "class")
-# df2 <- data.frame(pred, heartData$num)
-# df2
-# tab <- xtabs(~ (pred == 0) + (heartData$num == 0))
-# (tab[1,1] + tab[2,2])/sum(tab)
-# 
-# # Define server logic required to draw a histogram
-
-
-
 function(input, output, session) {
 
+  # About page graphic
+  output$graphic <- renderImage(list(src = "hearthealth.jpeg", height = "250px"), deleteFile = FALSE)
+  # get variables to include in data table
   output$varChoiceTable <- renderUI({
     checkboxGroupInput("tableVariables", "Variables to include in table",
                        choices = names(heartData),
@@ -104,9 +52,7 @@ function(input, output, session) {
   filterTableData <- reactive({
     filteredTableData <- heartData %>% select(input$tableVariables)
   })
-  
-  output$graphic <- renderImage(list(src = "hearthealth.jpeg", height = "250px"), deleteFile = FALSE)
-
+  # create data table and download button
   output$fullTable <- renderDT({
     datatable(filterTableData(),
               options = list(scrollX = TRUE))
@@ -117,19 +63,19 @@ function(input, output, session) {
       write.csv(filterTableData(), con)
     }
   )
+  # get 1st variable to summarize and plot
   output$plotVariable1choices <- renderUI({
     selectInput("plotVariable1", "First variable to summarize",
                 choices = names(heartData),
                 selected = "disease"
     )
   })
-  
+  # get filter values variable 1
   output$plotVariable1filter <- renderUI({
     req(input$plotVariable1)
     var1 <- (heartData %>%
                select(input$plotVariable1))[[1]]
     if(is.factor(var1)){
-    # print(levels(var1))}
       checkboxGroupInput("var1FactorFilterValues", "Filter by levels of 1st Variable:",
                          choices = levels(var1),
                          selected = levels(var1)
@@ -138,7 +84,7 @@ function(input, output, session) {
       sliderInput("var1ContFilterValues", "Filter by value of 1st variable:", min = min(var1), max = max(var1), value = c(min(var1), max(var1)))
     }
   })
-
+  # get 2nd variable to summarize and plot
   output$plotVariable2choices <- renderUI({
     req(input$numVars)
     if(input$numVars == TRUE){
@@ -147,7 +93,7 @@ function(input, output, session) {
       )
     }
   })
-  
+  # get filter values variable 2
   output$plotVariable2filter <- renderUI({
     req(input$plotVariable2)
     var2 <- (heartData %>%
@@ -161,7 +107,7 @@ function(input, output, session) {
       sliderInput("var2ContFilterValues", "Filter by value of 2nd variable:", min = min(var2), max = max(var2), value = c(min(var2), max(var2)))
     }
   })
-  
+  # get variables and filter values for plots and summaries
   heartDataPlot <- reactive({
     req(input$plotVariable1)
     var1 <- (heartData %>%
@@ -186,7 +132,7 @@ function(input, output, session) {
     }
     return(filtered)
   })
-  
+  # choose types of summaries and plots based on variables selected
   output$plotSingleVar <- renderUI({
     if(input$numVars == FALSE){
       if(is.factor((heartData %>% select(input$plotVariable1))[[1]])){
@@ -199,7 +145,6 @@ function(input, output, session) {
       }
     } 
   })
-  
   output$plotSingleVar2 <- renderUI({
     req(input$singleVarChoice)
     if(input$numVars == FALSE & 
@@ -213,29 +158,37 @@ function(input, output, session) {
       }
     }
   })
-  
   output$singleVarChart <- renderUI({
     if(input$numVars == FALSE){
       tableOutput("singleVarSummary")
     }
   })
-  
   output$chart2vars <- renderUI({
     req(input$numVars, input$plotVariable2)
     if(input$numVars == TRUE){
       if(is.factor((heartData %>% select(input$plotVariable1))[[1]])){
         if(is.factor((heartData %>% select(input$plotVariable2))[[1]])){
-          tableOutput("factorFactorSummary")
+          tagList(
+            textOutput("factorFactorSumTitle"),
+            tableOutput("factorFactorSummary"),
+            verbatimTextOutput("factorFactorSummary2")
+          )
         } else {
           if(is.numeric((heartData %>% select(input$plotVariable2))[[1]])){
-            tableOutput("factorContSummary")
+            tagList(
+              textOutput("factorContSumTitle"),
+              tableOutput("factorContSummary")
+            )
           }
         }
       } else {
         if(is.numeric((heartData %>% select(input$plotVariable1))[[1]])){
           if(is.factor((heartData %>% select(input$plotVariable2))[[1]])){
-            tableOutput("contFactorSummary")
-          } else {
+            tagList(
+              textOutput("contFactorSumTitle"),
+              tableOutput("contFactorSummary")
+            )
+            } else {
             if(is.numeric((heartData %>% select(input$plotVariable2))[[1]])){
               tableOutput("contContSummary")
             }
@@ -244,7 +197,6 @@ function(input, output, session) {
       }
     }
   })
-  
   output$corr <- renderUI({
     req(input$plotVariable2)
     if(is.numeric((heartData %>% select(input$plotVariable1))[[1]])){
@@ -253,7 +205,6 @@ function(input, output, session) {
       }
     }
   })
-  
   output$plot2vars <- renderUI({
     req(input$numVars, input$plotVariable2)
     if(input$numVars == TRUE){
@@ -309,7 +260,7 @@ function(input, output, session) {
       "Random forest models share some benefits with classification trees--they require no statistical assumptions, and they automatically select variables and account for interactions between variables.  However, they improve on the predictive ability of classification trees, but at the expense of interpretability."
     )
   })
-  
+  # get variables to include in GLM model
   output$varChoiceModel1 <- renderUI({
     checkboxGroupInput("modelVariables1", "Variables to include in GLM",
                        choices = names(heartData %>% select(-c(disease, num))),
@@ -317,15 +268,7 @@ function(input, output, session) {
                        selected = names(heartData %>% select(-c(disease, num)))
     )
   })
-  output$intChoiceModel1 <- renderUI({
-    checkboxInput("interaction", "Include interaction terms?"
-    )
-  })
-  output$autoChoiceModel1 <- renderUI({
-    checkboxInput("selection", "Perform automatic variable selection based on AIC (among variables selected above)?"
-    )
-  })
-  
+  # get variables to include in Tree model
   output$varChoiceModel2 <- renderUI({
     checkboxGroupInput("modelVariables2", "Variables to include in Classification Tree Model",
                        choices = names(heartData %>% select(-c(disease, num))),
@@ -333,7 +276,7 @@ function(input, output, session) {
                        selected = names(heartData %>% select(-c(disease, num)))
     )
   })
-  
+  # get variables to include in random forest model
   output$varChoiceModel3 <- renderUI({
     checkboxGroupInput("modelVariables3", "Variables to include in Random Forest Model",
                        choices = names(heartData %>% select(-c(disease, num))),
@@ -341,7 +284,7 @@ function(input, output, session) {
                        selected = names(heartData %>% select(-c(disease, num)))
     )
   })
-  
+  # get levels of factor variables for prediction
   output$factorsInput <- renderUI({
     tagList(
         selectInput("sex", "sex", choices = c(levels(heartData$sex))),
@@ -354,6 +297,7 @@ function(input, output, session) {
         selectInput("thal", "thal", choices = c(levels(heartData$thal)))
     )
   })
+  # get values of continuous variables for prediction
   output$contInput <- renderUI({
     tagList(
         numericInput("age", "age", value = mean(heartData$age, min = 0, max = 150)),
@@ -363,26 +307,61 @@ function(input, output, session) {
         numericInput("oldpeak", "oldpeak", value = mean(heartData$oldpeak), min = 0, max = 2 * max(heartData$oldpeak))
     )
   })
-
-  
+  # create summary tables
+  output$singleVarSummary <- renderTable({
+    req(input$plotVariable1)
+    if(is.factor((heartDataPlot() %>% select(input$plotVariable1))[[1]])){
+      count(heartDataPlot(), !!sym(input$plotVariable1))
+    } else {
+      if(is.numeric((heartDataPlot() %>% select(input$plotVariable1))[[1]])){
+        xtable(summary(heartDataPlot() %>% select(input$plotVariable1)))
+      }
+    }
+  })
+  output$singleVarBar <- renderPlotly({
+    req(input$plotVariable1)
+    figBar <- heartDataPlot() %>% count(!!sym(input$plotVariable1)) %>%
+      plot_ly(x = as.formula(paste0("~", input$plotVariable1)), y = ~n, type = "bar") 
+    figBar
+  })
+  output$singleVarBox <- renderPlotly({
+    req(input$plotVariable1)
+    figBox <- heartDataPlot() %>%
+      plot_ly(y = as.formula(paste0("~", input$plotVariable1)), type = "box")
+    figBox
+  })
+  output$singleVarHist <- renderPlotly({
+    req(input$plotVariable1)
+    figHist <- heartDataPlot() %>% 
+      plot_ly(x = as.formula(paste0("~", input$plotVariable1)), type = "histogram")
+    figHist
+  })
   output$factorFactorSummary <- renderTable({
     req(input$numVars, input$plotVariable2)
-    # xtable(xtabs(as.formula(paste0("~", input$plotVariable1, "+", input$plotVariable2)), data = heartData))
     xtable(table((heartDataPlot() %>% select(input$plotVariable1))[[1]], (heartDataPlot() %>% select(input$plotVariable2))[[1]]))
   },
     rownames = TRUE
-    # count(heartDataPlot(), !!sym(input$plotVariable1), !!sym(input$plotVariable2)) %>% xtable
   )
+  output$factorFactorSummary2 <- renderPrint({
+    req(input$numVars, input$plotVariable2)
+    summary(table((heartDataPlot() %>% select(input$plotVariable1))[[1]], (heartDataPlot() %>% select(input$plotVariable2))[[1]]))
+  }
+  )
+  output$factorFactorSumTitle <- renderText({
+    req(input$plotVariable2)
+    paste0(input$plotVariable1, " by ", input$plotVariable2, " contingency table")
+  })
   output$factorContSummary <- renderTable({
     req(input$numVars, input$plotVariable2)
-    html_caption_str <- as.character(shiny::tags$b(style = "color: red", "A styled caption"))
     heartDataPlot() %>% select(input$plotVariable1, !!sym(input$plotVariable2)) %>%
       group_by(!!sym(input$plotVariable1)) %>%
       summarize("Min" = min(!!sym(input$plotVariable2)), "1st Qu." = quantile(!!sym(input$plotVariable2))["25%"],  "Median" = median(!!sym(input$plotVariable2)), "Mean" = mean(!!sym(input$plotVariable2)), "3rd Qu." = quantile(!!sym(input$plotVariable2))["75%"], "Max" = max(!!sym(input$plotVariable2))) %>%
       xtable
-  },
-  caption = html_caption_str, caption.placement = "top"
-  )
+  })
+  output$factorContSumTitle <- renderText({
+    req(input$plotVariable2)
+    paste0("Summary of ", input$plotVariable2, " grouped by levels of ", input$plotVariable1)
+  })
   output$contFactorSummary <- renderTable({
     req(input$numVars, input$plotVariable2)
     heartDataPlot() %>% select(!!sym(input$plotVariable2), !!sym(input$plotVariable1)) %>%
@@ -390,10 +369,13 @@ function(input, output, session) {
       summarize("Min" = min(!!sym(input$plotVariable1)), "1st Qu." = quantile(!!sym(input$plotVariable1))["25%"],  "Median" = median(!!sym(input$plotVariable1)), "Mean" = mean(!!sym(input$plotVariable1)), "3rd Qu." = quantile(!!sym(input$plotVariable1))["75%"], "Max" = max(!!sym(input$plotVariable1))) %>%
       xtable 
   })
+  output$contFactorSumTitle <- renderText({
+    req(input$plotVariable2)
+    paste0("Summary of ", input$plotVariable1, " grouped by levels of ", input$plotVariable2)
+  })
   output$contContSummary <- renderTable({
     req(input$numVars, input$plotVariable2)
     heartDataPlot() %>% select(!!sym(input$plotVariable1), !!sym(input$plotVariable2)) %>% summary %>% xtable
-    # heartDataPlot()2 %>% select(!!sym(input$plotVariable1), !!sym(input$plotVariable2)) %>% cor
   })
   output$corrText <- renderText({
     req(input$numVars, input$plotVariable2)
@@ -401,7 +383,7 @@ function(input, output, session) {
       paste0("Correlation between ", input$plotVariable1, " and ", input$plotVariable2, " = ", round(cor(heartDataPlot() %>% select(!!sym(input$plotVariable1)), heartDataPlot() %>% select(!!sym(input$plotVariable2))), 3))
     }
   })
-  
+  # create plots
   output$factorFactorPlot <- renderPlotly({
     req(input$numVars, input$plotVariable2)
     p <- ggplot(data = count(heartDataPlot(), !!sym(input$plotVariable2), !!sym(input$plotVariable1))) + geom_mosaic(aes(weight = n, x = product(!!sym(input$plotVariable2)), fill = !!sym(input$plotVariable1))) + labs(x = input$plotVariable2, y = input$plotVariable1)
@@ -440,40 +422,11 @@ function(input, output, session) {
     figScatter
   })
   
-  
-  output$singleVarSummary <- renderTable({
-    req(input$plotVariable1)
-    if(is.factor((heartDataPlot() %>% select(input$plotVariable1))[[1]])){
-      count(heartDataPlot(), !!sym(input$plotVariable1))
-    } else {
-      if(is.numeric((heartDataPlot() %>% select(input$plotVariable1))[[1]])){
-        xtable(summary(heartDataPlot() %>% select(input$plotVariable1)))
-      }
-    }
-  })
-  output$singleVarBar <- renderPlotly({
-    req(input$plotVariable1)
-    figBar <- heartDataPlot() %>% count(!!sym(input$plotVariable1)) %>%
-      plot_ly(x = as.formula(paste0("~", input$plotVariable1)), y = ~n, type = "bar") 
-    figBar
-  })
-  output$singleVarBox <- renderPlotly({
-    req(input$plotVariable1)
-    figBox <- heartDataPlot() %>%
-      plot_ly(y = as.formula(paste0("~", input$plotVariable1)), type = "box")
-    figBox
-  })
-  output$singleVarHist <- renderPlotly({
-    req(input$plotVariable1)
-    figHist <- heartDataPlot() %>% 
-      plot_ly(x = as.formula(paste0("~", input$plotVariable1)), type = "histogram")
-    figHist
-  })
-  
   ## Modeling page
   # store user inputs when action button pressed
   data <- eventReactive(input$fit, {
-    list(prop = input$trainingProp, vars1 = input$modelVariables1, vars2 = input$modelVariables2, vars3 = input$modelVariables3, int = input$interaction, auto = input$selection)
+    list(prop = input$trainingProp, vars1 = input$modelVariables1, vars2 = input$modelVariables2, vars3 = input$modelVariables3, folds = input$numFolds
+    )
   })
   # fit models
   fitModels <- reactive({
@@ -483,9 +436,9 @@ function(input, output, session) {
     progress$set(message = "Fitting model", value = 0)
     info <- data()
     # partition data set
-    trainIndex <- createDataPartition(heartData()$disease, p = info$prop[[1]], list = FALSE)
-    heartTrain <- heartData()[trainIndex, ]
-    heartTest <- heartData()[-trainIndex, ]
+    trainIndex <- createDataPartition(heartData$disease, p = info$prop[[1]], list = FALSE)
+    heartTrain <- heartData[trainIndex, ]
+    heartTest <- heartData[-trainIndex, ]
     # fit GLM model
     predictors1 <- paste(info$vars1, collapse = "+")
     formula1 <- as.formula(paste0("disease", "~", predictors1))
@@ -494,7 +447,7 @@ function(input, output, session) {
                       method = "glm",
                       family = "binomial",
                       preProcess = c("center", "scale"),
-                      trControl = trainControl(method = "cv", number = 10)
+                      trControl = trainControl(method = "cv", number = info$folds)
     )
     # fit tree model
     predictors2 <- paste(info$vars2, collapse = "+")
@@ -503,7 +456,7 @@ function(input, output, session) {
     model2Fit <- train(formula2, data = heartTrain,
                        method = "rpart",
                        preProcess = c("center", "scale"),
-                       trControl = trainControl(method = "repeatedcv", number = 10, repeats = 3)
+                       trControl = trainControl(method = "repeatedcv", number = info$folds, repeats = 3)
     )
     # fit random forest model
     predictors3 <- paste(info$vars3, collapse = "+")
@@ -512,12 +465,12 @@ function(input, output, session) {
     model3Fit <- train(formula3, data = heartTrain,
                        method = "rf",
                        preProcess = c("center", "scale"),
-                       trControl = trainControl(method = "repeatedcv", number = 10, repeats = 3)
+                       trControl = trainControl(method = "repeatedcv", number = info$folds, repeats = 3)
     )
     progress$inc(4/4, detail = paste("Done"))
     list(model1Fit, model2Fit, model3Fit, heartTest)
   })
-  
+  # create summaries of model fits
   output$model1Text <- renderPrint({
     model1Fit <- fitModels()[[1]]
     model1Fit
@@ -560,7 +513,7 @@ function(input, output, session) {
     conf3 <- confusionMatrix(pred3, heartTest$disease)
     list(conf1, conf2, conf3)
   })
-  
+  # create summaries of model performance on test set
   output$performance1 <- renderPrint({
     performance()[[1]]
   })
@@ -592,41 +545,56 @@ function(input, output, session) {
   },
   rownames = TRUE
   )
-
 }
 
-# paste("Tree model accuracy = ", fitModels[[2]][["results"]]["Accuracy"])
+# Other things I tried but didn't include in final version (inc ROC, AUC, etc.), may add in future
 
-# listTest <- list(logFit10, logFit4)
-# str(listTest[[2]])
-# str(logFit4)
+# binMod <- glm(num ~ . - disease, family = binomial, heartData)
+# summary(binMod)
+# df <- data.frame(binMod$fitted.values, heartData$num)
+# tabBin <- xtabs(~ (binMod$fitted.values > .4) + (heartData$num != 0))
+# tabBin
+# (tabBin[1,1] + tabBin[2,2])/sum(tabBin)
+# library(ROCR)
+# predBin <- prediction(binMod$fitted.values, (heartData$num != 0))
+# perfBin <- performance(predBin, "acc")
+# plot(perfBin)
+# optimize(perfBin, interval = c(.2, .8), maximum = TRUE)
+# max(perfBin)
+# perfBin
+# slotNames(perfBin)
+# perfBin @ x.name
+# 
+# aucBin <- performance(predBin, "auc")
+# aucBin @ y.values[[1]]
+# perfBin @ y.values[[1]]
 
-# logFit10[["results"]]["Accuracy"][[1]]
-# str(logFit10$results)
-# lapply(list(logFit10, logFit4), [["results"]])
-  # test <- paste(c("hi", "bye"), collapse = "+")
-  # as.formula(paste0("y", "~", test))
 
+# binMod2 <- glm(disease ~ . - num, family = binomial, heartData)
+# summary(binMod2)
+# df <- data.frame(binMod2$fitted.values, heartData$num)
+# tabBin <- xtabs(~ (binMod2$fitted.values > .4) + (heartData$num != 0))
+# tabBin
+# (tabBin[1,1] + tabBin[2,2])/sum(tabBin)
+# library(ROCR)
+# predBin <- prediction(binMod2$fitted.values, (heartData$num != 0))
+# perfBin <- performance(predBin, "acc")
+# plot(perfBin)
+# optimize(perfBin, interval = c(.2, .8), maximum = TRUE)
+# max(perfBin)
+# perfBin
+# slotNames(perfBin)
+# perfBin @ x.name
 # 
-# options(contrasts = c("contr.treatment", "contr.poly"))
-# house.plr <- polr(Sat ~ Infl + Type + Cont, weights = Freq, data = housing)
-# house.plr
-# summary(house.plr, digits = 3)
+# aucBin <- performance(predBin, "auc")
+# aucBin @ y.values[[1]]
+# perfBin @ y.values[[1]]
 # 
-# ## slightly worse fit from
-# summary(update(house.plr, method = "probit", Hess = TRUE), digits = 3)
-# ## although it is not really appropriate, can fit
-# summary(update(house.plr, method = "loglog", Hess = TRUE), digits = 3)
-# summary(update(house.plr, method = "cloglog", Hess = TRUE), digits = 3)
+# orderedLogMod <- polr(num ~ ., heartData)
+# orderedLogMod
 # 
-# predict(house.plr, housing, type = "p")
-# addterm(house.plr, ~.^2, test = "Chisq")
-# house.plr2 <- stepAIC(house.plr, ~.^2)
-# house.plr2$anova
-# anova(house.plr, house.plr2)
-# 
-# house.plr <- update(house.plr, Hess=TRUE)
-# pr <- profile(house.plr)
-# confint(pr)
-# plot(pr)
-# pairs(pr)
+# pred <- predict(orderedLogMod, heartData, "class")
+# df2 <- data.frame(pred, heartData$num)
+# df2
+# tab <- xtabs(~ (pred == 0) + (heartData$num == 0))
+# (tab[1,1] + tab[2,2])/sum(tab)

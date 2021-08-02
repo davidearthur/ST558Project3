@@ -133,29 +133,43 @@ body <- dashboardBody(
     ),
     tabItem("fitting", h2("Model Fitting"),
             fluidRow(
-              box(width = 5,
-                sliderInput("trainingProp", "What proportion of data to use as training set?",
-                          min = 0.1, max = 0.9, value = 0.7)
+              column(width = 6,
+                box(width = NULL,
+                    sliderInput("trainingProp", "What proportion of data to use as training set?",
+                                min = 0.1, max = 0.9, value = 0.7
+                    ),
+                    sliderInput("numFolds", "How many folds to use in cross validation?",
+                                min = 2, max = 15, value = 10,
+                                step = 1, ticks = TRUE
+                    ),
+                    actionButton("fit", "Fit Models")
+                )
               ),
-              # box(width = 2,
-                actionButton("fit", "Fit Models"),
-              # ),
-              box(title = "Comparison of performance on training set",
-                  width = 5,
-                  tableOutput("comparison")
+              column(width = 6,
+                box(title = "Comparison of performance on training set",
+                    width = NULL,
+                    tableOutput("comparison")
+                ),
+                box(title = "Comparison of mis-classification rates on test set",
+                    width = NULL,
+                    tableOutput("performanceComp")
+                )
               )
             ),
             fluidRow(
-              box(width = 4,
-                uiOutput("varChoiceModel1"),
-                uiOutput("intChoiceModel1"),
-                uiOutput("autoChoiceModel1")
+              column(width = 4,
+                box(width = NULL,
+                  uiOutput("varChoiceModel1")
+                ),
+                box(title = "GLM fit on training set",
+                    width = NULL,
+                    verbatimTextOutput("model1Text")
+                )
               ),
               column(width = 8,
-                box(title = "GLM fit on training set",
-                    verbatimTextOutput("model1Text")
-                ),
                 box(title = "GLM Summary",
+                    width = NULL,
+                    collapsible = TRUE,
                     verbatimTextOutput("model1Summary")
                 )
               )
@@ -189,9 +203,6 @@ body <- dashboardBody(
             fluidRow(
               box(title = "Random Forest performance on test set",
                 verbatimTextOutput("performance3")
-              ),
-              box(title = "Comparison of mis-classification rates on test set",
-                tableOutput("performanceComp")
               )
             )
     ),
@@ -203,7 +214,7 @@ body <- dashboardBody(
               box(title = "Continuous variables",
                 uiOutput("contInput")
               ),
-              box("Predictions based on selected values of variables",
+              box("Predictions of fitted models based on selected values of variables",
                 tableOutput("predictions")
               )
             )
@@ -214,17 +225,5 @@ body <- dashboardBody(
 dashboardPage(
   dashboardHeader(title = "Heart Disease Data"),
   sidebar,
-  # dashboardSidebar(
-  #     sidebarMenu(
-  #         menuItem("About", tabName = "about", icon = icon("info")),
-  #         menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-  #         menuItem("Widgets", icon = icon("th"), tabName = "widgets"),
-  #         menuItem("ChartsTest", icon = icon("bar-chart-o"), startExpanded = TRUE,
-  #                  menuSubItem("Sub-item 1", tabName = "subitem1"),
-  #                  menuSubItem("Sub-item 2", tabName = "subitem2")
-  #         )
-  #     ),
-  #     textOutput("res")
-  # ),
   body
 )
