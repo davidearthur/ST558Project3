@@ -28,7 +28,7 @@ body <- dashboardBody(
   tabItems(
     tabItem("about", h2("About"),
               "This app allows the user to explore and analyze a data set from 1988 related to diagnosis of heart disease at a location of the Cleveland Clinic.  The data set includes 14 measurements taken on 303 patients at 8 categorical predictors, 5 continuous predictors, and a categorical response.  The response variable (num) is ordinal with 5 levels, representing the absence of heart disease (num = 0), or various degrees of heart disease (num = 1, 2, 3, 4).  For the purposes of this app, a binary response variable was created (disease), representing simply the presence or absence of heart disease (disease = 'yes'/'no').  For more information or to download the data set, see ",
-              a(href="http://www.rstudio.com",target="_blank","UCI Machine Learning"),
+              a(href="https://archive.ics.uci.edu/ml/datasets/heart+disease", target="_blank", "UCI Machine Learning"),
               br(),
               br(),
               "The Data page allows the user to view the data set in a table, with the options of choosing which variables to include, sorting by any variable, and searching.  The user can also download the data set with their chosen variables to a .csv file.  The Data Exploration page allows the user to view various summaries and plots of the data, again with a choice of variables and an option to download plots.  The plots are interactive, allowing zoom, pan, and other features.",
