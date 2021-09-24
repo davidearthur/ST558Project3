@@ -7,6 +7,7 @@
 #    http://shiny.rstudio.com/
 #
 # 
+library(shiny)
 library(shinydashboard)
 library(DT)
 library(MASS)
@@ -17,6 +18,7 @@ library(ggmosaic)
 library(knitr)
 library(xtable)
 library(caret)
+library(e1071)
 
 select <- dplyr::select
 # read in data

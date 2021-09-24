@@ -7,8 +7,18 @@
 #    http://shiny.rstudio.com/
 #
 
-
+library(shiny)
 library(shinydashboard)
+library(DT)
+library(MASS)
+library(tidyverse)
+library(GGally)
+library(plotly)
+library(ggmosaic)
+library(knitr)
+library(xtable)
+library(caret)
+library(e1071)
 
 sidebar <- dashboardSidebar(
   sidebarMenu(
@@ -27,7 +37,7 @@ sidebar <- dashboardSidebar(
 body <- dashboardBody(
   tabItems(
     tabItem("about", h2("About"),
-              "This app allows the user to explore and analyze a data set from 1988 related to diagnosis of heart disease at a location of the Cleveland Clinic.  The data set includes 14 measurements taken on 303 patients at 8 categorical predictors, 5 continuous predictors, and a categorical response.  The response variable (num) is ordinal with 5 levels, representing the absence of heart disease (num = 0), or various degrees of heart disease (num = 1, 2, 3, 4).  For the purposes of this app, a binary response variable was created (disease), representing simply the presence or absence of heart disease (disease = 'yes'/'no').  For more information or to download the data set, see ",
+              "This app allows the user to explore and analyze a data set from 1988 related to diagnosis of heart disease at a location of the Cleveland Clinic.  The data set includes 14 variables for 303 patients: 8 categorical predictors, 5 continuous predictors, and a categorical response.  The response variable (num) is ordinal with 5 levels, representing the absence of heart disease (num = 0), or various degrees of heart disease (num = 1, 2, 3, 4).  For the purposes of this app, a binary response variable was created (disease), representing simply the presence or absence of heart disease (disease = 'yes'/'no').  For more information or to download the data set, see ",
               a(href="https://archive.ics.uci.edu/ml/datasets/heart+disease", target="_blank", "UCI Machine Learning"),
               br(),
               br(),
