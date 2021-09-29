@@ -6,6 +6,7 @@ This `shiny` app allows the user to explore and analyze a data set from 1988 rel
 ### Packages Required
 The following packages are required to run this app: 
 
+*  shiny
 *  shinydashboard
 *  DT
 *  MASS
@@ -16,10 +17,11 @@ The following packages are required to run this app:
 *  knitr
 *  xtable
 *  caret
+*  e1071
 
 
 ### Code to install all necessary packages:
-`install.packages("shinydashboard", "DT", "MASS", "tidyverse", "GGally", "plotly", "ggmosaic", "knitr", "xtable", "caret")`
+`install.packages("shiny", "shinydashboard", "DT", "MASS", "tidyverse", "GGally", "plotly", "ggmosaic", "knitr", "xtable", "caret", "e1071")`
 
 ### Code to run app from gitHub:
 `shiny::runGitHub("ST558Project3", "davidearthur", ref = "main")`
